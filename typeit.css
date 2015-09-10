@@ -1,0 +1,50 @@
+/*** Type It ***/
+#typeit {
+    position: relative;
+    display: inline-block;
+    text-align: left;
+}
+
+.typed {
+    color: #2196F3;
+}
+
+.untyped {
+    color: white !important;
+    background-color: #2196F3 !important;
+}
+
+.cursor {
+    color: #2196F3;
+    position: absolute;
+    bottom: 0.1em;
+    right: -0.2em;
+    font-size: larger;
+    font-weight: lighter;
+}
+
+.blinking {
+    opacity: 1;
+    -webkit-animation: blink 0.5s infinite alternate;
+    -moz-animation: blink 0.5s infinite alternate;
+    animation: blink 0.5s infinite alternate;
+}
+
+@keyframes blink {
+    0%   { opacity: 1; }
+    30%  { opacity: 1; }
+    70%  { opacity: 0; }
+    100% { opacity: 0; }
+}
+@-webkit-keyframes blink {
+    0%   { opacity: 1; }
+    30%  { opacity: 1; }
+    70%  { opacity: 0; }
+    100% { opacity: 0; }
+}
+@-moz-keyframes blink {
+    0%   { opacity: 1; }
+    30%  { opacity: 1; }
+    70%  { opacity: 0; }
+    100% { opacity: 0; }
+}

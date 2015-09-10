@@ -1,133 +1,107 @@
-jQuery.fn.blinker = function( options ) {
-    function stopBlink( element ) {
-        if (element.interval != undefined) {
-            clearInterval(element.interval);
-        }
-        delete element.interval;
-    }
+(function ( $ ) {
 
-    function startBlink(element) {
-        if (element.interval == undefined) {
-            element.interval = setInterval(function () {
-                $(element).fadeToggle(settings.fadeDuration);
-            }, settings.delay);
-        }
-    }
+    var ACTION_TYPED = "TYPED";
+    var ACTION_UNTYPING = "UNTYPING";
+    var ACTION_UNTYPED = "UNTYPED";
+    var ACTION_TYPING = "TYPING";
+    var ACTION_DELETED = "DELETED";
 
-    if (typeof options == "string") {
-        options = {action: options};
-    }
+    var TypeItController = function(element, phrases, options) {
+        var controller = this;
 
-    var settings = $.extend({
-        action: "blink",
-        fadeDuration: 200,
-        delay: 500,
-    }, options );
+        controller.options = options;
 
-    return this.each(function() {
-        switch (settings.action) {
-            case "show":
-                stopBlink(this);
-                $(this).fadeIn(settings.fadeDuration);
-                break;
-            case "hide":
-                stopBlink(this);
-                $(this).fadeOut(settings.fadeDuration);
-                break;
-            default:
-                startBlink(this);
-        }
-    });
-};
-
-jQuery.fn.typeit = function(options) {
-
-    function typeLetterByLetter(element, text, onFinish) {
-        if (text.length > 0) {
-            element.text(element.text() + text[0]);
-            setTimeout(function() { typeLetterByLetter(element, text.substr(1), onFinish); }, 100);
-            return;
-        }
-        if (typeof onFinish == "function") {
-            onFinish.call();
-        }
-    }
-
-    function type(element, text, onUnTypeFinish) {
-        var container = element.find('.typeit');
-        if (container.length == 0) {
-            container = $('<span class="typeit"><span>');
-            element.append(container);
-        }
-
-        var typedText = container.find('.typed');
-        if (typedText.length == 0) {
-            typedText = $('<span class="typed"></span>');
-            container.append(typedText);
-        }
-
-        var cursor = container.find(".cursor");
-        if (cursor.length == 0) {
-            cursor = $('<span class="cursor">|</span>').blinker({action: "show"});
-            container.append(cursor);
-        }
-
-        typeLetterByLetter(typedText, text, function() {
-            cursor.blinker();
-            setTimeout(function() { unType(container, onUnTypeFinish); }, 3000);
-        });
-    }
-
-    function unTypeLetterByLetter(typed, untyped, onFinish) {
-        var typedText = typed.text();
-        var unTypedText = untyped.text();
-
-        if (typedText.length > 0) {
-            untyped.text(typedText.slice(-1) + unTypedText);
-            typed.text(typedText.slice(0, -1));
-            setTimeout(function() { unTypeLetterByLetter(typed, untyped, onFinish); }, 100);
-            return;
-        }
-        if (typeof onFinish == "function") {
-            onFinish.call();
-        }
-    }
-
-    function unType(container, onFinish) {
-        var cursor = container.find(".cursor");
-        cursor.blinker("hide");
-
-        var typed = container.find('.typed');
-        var untyped = $('<span class="untyped" style="color: white; background-color: blue;"></span>');
-        typed.after(untyped);
-
-        unTypeLetterByLetter(typed, untyped, function(){
-            untyped.remove();
-            cursor.blinker();
-            if (typeof onFinish == "function") {
-                onFinish.call();
-            }
-        });
-    }
-
-    /* Circular array */
-    options.text.currentIndex = 0;
-    options.text.getCurrent = function() {
-        return this[this.currentIndex];
-    };
-    options.text.getNext = function() {
-        this.currentIndex++;
-        if (this[this.currentIndex] == undefined) { this.currentIndex = 0; }
-        return this.getCurrent();
-    };
-
-
-    return this.each(function(){
-        var element = $(this);
-        var onUnTypeFinish = function() {
-            type(element, options.text.getNext(), onUnTypeFinish);
+        controller.elements = {
+            typed: element.find('.typed'),
+            untyped: element.find('.untyped'),
+            cursor: element.find('.cursor')
         };
 
-        type(element, options.text.getCurrent(), onUnTypeFinish);
-    });
-};
+        controller.phrases = phrases;
+
+        controller.state = {
+            state: "TYPED",
+            delayToNextAction: controller.options.unTypeDelay,
+            phraseIndex: 0,
+            letterIndex: 0
+        };
+
+        this.iterate = function() {
+            controller.state.delayToNextAction -= controller.options.interval;
+            //console.log(controller.state.state, controller.state.delayToNextAction);
+            if (controller.state.delayToNextAction <= 0) {
+                switch (controller.state.state) {
+                    case ACTION_TYPED:
+                        controller.state.state = ACTION_UNTYPING;
+                        controller.state.delayToNextAction = controller.options.unTypeInterval;
+                        controller.elements.cursor.addClass('hide');
+                        break;
+                    case ACTION_UNTYPING:
+                        var typedText = controller.elements.typed.text();
+                        var unTypedText = controller.elements.untyped.text();
+                        controller.elements.untyped.text(typedText.slice(-1) + unTypedText);
+                        controller.elements.typed.text(typedText.slice(0, -1));
+
+                        controller.state.delayToNextAction = controller.options.unTypeInterval;
+
+                        if (typedText.length <= 1) {
+                            controller.state.state = ACTION_UNTYPED;
+                            controller.state.delayToNextAction = controller.options.deleteDelay;
+                        }
+                        break;
+                    case ACTION_UNTYPED:
+                        controller.state.state = ACTION_DELETED;
+                        controller.state.phraseIndex++;
+                        if (controller.state.phraseIndex >= controller.phrases.length) { controller.state.phraseIndex = 0; }
+                        controller.state.letterIndex = 0;
+                        controller.state.delayToNextAction = controller.options.typeDelay;
+
+                        controller.elements.untyped.text("");
+                        controller.elements.cursor.removeClass('hide');
+                        controller.elements.cursor.css({color: controller.phrases[controller.state.phraseIndex].color});
+                        controller.elements.typed.css({color: controller.phrases[controller.state.phraseIndex].color});
+                        controller.elements.untyped.css({color: controller.phrases[controller.state.phraseIndex].color});
+                        break;
+                    case ACTION_DELETED:
+                        controller.state.state = ACTION_TYPING;
+                        controller.state.delayToNextAction = controller.options.typeInterval;
+                        controller.elements.cursor.removeClass('blinking');
+                        break;
+                    case ACTION_TYPING:
+                        controller.state.letterIndex++;
+                        controller.elements.typed.text(
+                            controller.phrases[controller.state.phraseIndex].phrase.slice(0, controller.state.letterIndex)
+                        );
+                        controller.state.delayToNextAction = controller.options.typeInterval;
+
+                        if (controller.phrases[controller.state.phraseIndex].phrase.length <= controller.state.letterIndex) {
+                            controller.state.state = ACTION_TYPED;
+                            controller.state.delayToNextAction = controller.options.unTypeDelay;
+                            controller.elements.cursor.addClass('blinking');
+                        }
+                        break;
+                }
+            }
+        }
+    };
+
+    $.fn.typeit = function( phrases, options ) {
+
+        options = $.extend({
+            interval: 50,
+            typeInterval: 50,
+            unTypeInterval: 50,
+            unTypeDelay: 3000,
+            deleteDelay: 100,
+            typeDelay: 750
+        }, options);
+
+        return this.each(function() {
+            var t = new TypeItController( $( this ), phrases, options );
+            var interval = setInterval(t.iterate, 100);
+        });
+
+    };
+
+
+}( jQuery ));
