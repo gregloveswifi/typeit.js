@@ -1,33 +1,34 @@
 /*** Type It ***/
-#typeit {
-    position: relative;
-    display: inline-block;
-    text-align: left;
-}
-
-.typed {
+#typeit .typed {
     color: #2196F3;
 }
 
-.untyped {
+#typeit .untyped {
     color: white !important;
     background-color: #2196F3 !important;
 }
 
-.cursor {
-    color: #2196F3;
-    position: absolute;
-    bottom: 0.1em;
-    right: -0.2em;
-    font-size: larger;
-    font-weight: lighter;
+#typeit .cursor {
+    position: relative;
 }
 
-.blinking {
+#typeit .cursor:after {
+    content: "|";
+    position: absolute;
+    font-size: 1.1em;
+    top: -0.3em;
+    font-weight: 100;
+}
+
+#typeit .blinking {
     opacity: 1;
     -webkit-animation: blink 0.5s infinite alternate;
     -moz-animation: blink 0.5s infinite alternate;
     animation: blink 0.5s infinite alternate;
+}
+
+.hide {
+    display: none !important;
 }
 
 @keyframes blink {

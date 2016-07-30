@@ -1,5 +1,5 @@
 (function ( $ ) {
-
+    var INTERVAL = 50;
     var ACTION_TYPED = "TYPED";
     var ACTION_UNTYPING = "UNTYPING";
     var ACTION_UNTYPED = "UNTYPED";
@@ -20,15 +20,15 @@
         controller.phrases = phrases;
 
         controller.state = {
-            state: "TYPED",
-            delayToNextAction: controller.options.unTypeDelay,
+            state: ACTION_DELETED,
+            delayToNextAction: controller.options.typeDelay,
             phraseIndex: 0,
             letterIndex: 0
         };
+        controller.elements.cursor.css({color: controller.phrases[controller.state.phraseIndex].color});
 
         this.iterate = function() {
-            controller.state.delayToNextAction -= controller.options.interval;
-            //console.log(controller.state.state, controller.state.delayToNextAction);
+            controller.state.delayToNextAction -= INTERVAL;
             if (controller.state.delayToNextAction <= 0) {
                 switch (controller.state.state) {
                     case ACTION_TYPED:
@@ -85,23 +85,19 @@
         }
     };
 
-    $.fn.typeit = function( phrases, options ) {
+    $.fn.typeit = function (phrases, options) {
 
-        options = $.extend({
-            interval: 50,
-            typeInterval: 50,
+        var opt = $.extend({
+            typeInterval: 100,
             unTypeInterval: 50,
-            unTypeDelay: 3000,
-            deleteDelay: 100,
-            typeDelay: 750
+            unTypeDelay: 5000,
+            deleteDelay: 500,
+            typeDelay: 1000
         }, options);
 
         return this.each(function() {
-            var t = new TypeItController( $( this ), phrases, options );
-            var interval = setInterval(t.iterate, 100);
+            var t = new TypeItController( $( this ), phrases, opt );
+            var interval = setInterval(t.iterate, INTERVAL);
         });
-
     };
-
-
 }( jQuery ));
