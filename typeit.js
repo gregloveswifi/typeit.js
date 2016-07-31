@@ -26,6 +26,8 @@
             letterIndex: 0
         };
         controller.elements.cursor.css({color: controller.phrases[controller.state.phraseIndex].color});
+        controller.elements.typed.css({color: controller.phrases[controller.state.phraseIndex].color});
+        controller.elements.untyped.css({color: controller.phrases[controller.state.phraseIndex].color});
 
         this.iterate = function() {
             controller.state.delayToNextAction -= INTERVAL;
